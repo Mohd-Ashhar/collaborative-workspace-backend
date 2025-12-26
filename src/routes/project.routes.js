@@ -10,6 +10,7 @@ const {
   updateMemberRoleValidation,
   validate,
 } = require("../middleware/validators/project.validator");
+const ActivityController = require("../controllers/activity.controller");
 
 const router = express.Router();
 
@@ -124,6 +125,19 @@ router.delete(
   validate,
   RBACMiddleware.isProjectOwner(),
   ProjectController.removeMember
+);
+
+/**
+ * @route   GET /api/v1/projects/:projectId/activities
+ * @desc    Get project activities
+ * @access  Private (must be project member)
+ */
+router.get(
+  "/:projectId/activities",
+  projectIdValidation,
+  validate,
+  RBACMiddleware.canRead(),
+  ActivityController.getProjectActivities
 );
 
 module.exports = router;

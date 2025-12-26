@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test Client</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      input,
+      button,
+      select {
+        padding: 10px;
+        margin: 5px;
+        font-size: 14px;
+      }
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      .disconnect {
+        background: #f44336;
+      }
+      .disconnect:hover {
+        background: #da190b;
+      }
+      #events {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .event {
+        padding: 10px;
+        margin: 5px 0;
+        background: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        border-radius: 4px;
+      }
+      .event.error {
+        background: #ffebee;
+        border-left-color: #f44336;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .connected {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .disconnected {
+        background: #ffebee;
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 WebSocket Test Client</h1>
+
+      <div id="status" class="status disconnected">Status: Disconnected</div>
+
+      <div style="margin: 20px 0">
+        <input
+          type="text"
+          id="token"
+          placeholder="Enter Access Token"
+          style="width: 500px"
+        />
+        <button onclick="connect()">Connect</button>
+        <button class="disconnect" onclick="disconnect()">Disconnect</button>
+      </div>
+
+      <hr />
+
+      <h3>Join Project</h3>
+      <input type="number" id="projectId" placeholder="Project ID" value="1" />
+      <button onclick="joinProject()">Join Project</button>
+      <button onclick="leaveProject()">Leave Project</button>
+
+      <hr />
+
+      <h3>Send Events</h3>
+      <div>
+        <select id="eventType">
+          <option value="user_typing">User Typing</option>
+          <option value="user_cursor_move">Cursor Move</option>
+          <option value="file_change">File Change</option>
+          <option value="code_update">Code Update</option>
+          <option value="activity_update">Activity Update</option>
+        </select>
+        <input
+          type="text"
+          id="fileName"
+          placeholder="File Name"
+          value="index.js"
+        />
+        <button onclick="sendEvent()">Send Event</button>
+      </div>
+
+      <hr />
+
+      <h3>Events Log</h3>
+      <button onclick="clearEvents()">Clear Events</button>
+      <div id="events"></div>
+    </div>
+
+    <script>
+      let socket = null;
+      let currentProjectId = null;
+
+      function connect() {
+        const token = document.getElementById("token").value;
+        if (!token) {
+          alert("Please enter an access token");
+          return;
+        }
+
+        socket = io("http://localhost:3000", {
+          auth: { token },
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("connect", () => {
+          updateStatus("Connected", true);
+          logEvent("Connected to WebSocket server", "success");
+        });
+
+        socket.on("disconnect", () => {
+          updateStatus("Disconnected", false);
+          logEvent("Disconnected from server", "error");
+        });
+
+        socket.on("error", (error) => {
+          logEvent(`Error: ${error.message}`, "error");
+        });
+
+        // Listen to all events
+        socket.onAny((eventName, data) => {
+          logEvent(`Event: ${eventName}`, "info", data);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          updateStatus("Disconnected", false);
+        }
+      }
+
+      function joinProject() {
+        if (!socket) {
+          alert("Please connect first");
+          return;
+        }
+
+        const projectId = parseInt(document.getElementById("projectId").value);
+        currentProjectId = projectId;
+
+        socket.emit("join_project", { projectId });
+        logEvent(`Joining project ${projectId}...`, "info");
+      }
+
+      function leaveProject() {
+        if (!socket || !currentProjectId) {
+          alert("Not in any project");
+          return;
+        }
+
+        socket.emit("leave_project", { projectId: currentProjectId });
+        logEvent(`Leaving project ${currentProjectId}...`, "info");
+        currentProjectId = null;
+      }
+
+      function sendEvent() {
+        if (!socket || !currentProjectId) {
+          alert("Please connect and join a project first");
+          return;
+        }
+
+        const eventType = document.getElementById("eventType").value;
+        const fileName = document.getElementById("fileName").value;
+
+        let eventData = {
+          projectId: currentProjectId,
+          fileName,
+        };
+
+        if (eventType === "user_typing") {
+          eventData.isTyping = true;
+        } else if (eventType === "user_cursor_move") {
+          eventData.position = { line: 10, column: 5 };
+        } else if (eventType === "file_change") {
+          eventData.changeType = "update";
+          eventData.content = 'console.log("Hello World");';
+        } else if (eventType === "code_update") {
+          eventData.changes = [{ line: 5, text: "new code" }];
+          eventData.version = Date.now();
+        } else if (eventType === "activity_update") {
+          eventData.activity = "editing file";
+        }
+
+        socket.emit(eventType, eventData);
+        logEvent(`Sent: ${eventType}`, "info", eventData);
+      }
+
+      function updateStatus(text, isConnected) {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = `Status: ${text}`;
+        statusDiv.className = `status ${
+          isConnected ? "connected" : "disconnected"
+        }`;
+      }
+
+      function logEvent(message, type = "info", data = null) {
+        const eventsDiv = document.getElementById("events");
+        const eventDiv = document.createElement("div");
+        eventDiv.className = `event ${type}`;
+
+        let content = `[${new Date().toLocaleTimeString()}] ${message}`;
+        if (data) {
+          content += `<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        eventDiv.innerHTML = content;
+        eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+      }
+
+      function clearEvents() {
+        document.getElementById("events").innerHTML = "";
+      }
+    </script>
+  </body>
+</html>
