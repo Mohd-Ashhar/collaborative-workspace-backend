@@ -41,10 +41,12 @@ app.get("/health", (req, res) => {
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const workspaceRoutes = require("./routes/workspace.routes");
+const jobRoutes = require('./routes/job.routes');
 const AuthMiddleware = require("./middleware/auth.middleware");
 
 app.use(`/api/${process.env.API_VERSION}/auth`, authRoutes);
 app.use(`/api/${process.env.API_VERSION}/projects`, projectRoutes);
+app.use(`/api/${process.env.API_VERSION}/jobs`, jobRoutes);
 
 // Nested workspace routes under projects
 app.use(
