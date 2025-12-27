@@ -3,21 +3,24 @@ const { REDIS_CHANNELS } = require("../utils/events.util");
 
 class RedisPubSubService {
   constructor() {
-    // Publisher client
-    this.publisher = new Redis({
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      password: process.env.REDIS_PASSWORD,
+    // Determine Redis configuration for Render or local development
+    const redisOptions = {
       retryStrategy: (times) => Math.min(times * 50, 2000),
-    });
+      maxRetriesPerRequest: null, // Essential for avoiding 'MaxRetriesPerRequestError' on Render
+    };
 
-    // Subscriber client (separate connection required)
-    this.subscriber = new Redis({
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      password: process.env.REDIS_PASSWORD,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
-    });
+    // Prioritize REDIS_URL (Render) over individual parameters
+    const redisTarget = process.env.REDIS_URL || {
+      host: process.env.REDIS_HOST || "localhost",
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+    };
+
+    // Publisher client
+    this.publisher = new Redis(redisTarget, redisOptions);
+
+    // Subscriber client (separate connection required for Pub/Sub)
+    this.subscriber = new Redis(redisTarget, redisOptions);
 
     this.handlers = new Map();
 

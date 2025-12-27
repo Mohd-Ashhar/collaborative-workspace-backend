@@ -20,7 +20,11 @@ class QueueService {
         };
 
     Object.values(JOB_TYPES).forEach((jobType) => {
+      // Bull internally uses ioredis; pass maxRetriesPerRequest to prevent connection errors on Render
       this.queues[jobType] = new Bull(jobType, redisConfig, {
+        redis: {
+          maxRetriesPerRequest: null,
+        },
         defaultJobOptions: {
           attempts: JOB_CONFIG.MAX_RETRIES,
           backoff: JOB_CONFIG.BACKOFF,
