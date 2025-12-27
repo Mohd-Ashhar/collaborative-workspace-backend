@@ -7,6 +7,7 @@ const {
   connectRedis,
 } = require("./config/database");
 const WebSocketService = require("./services/websocket.service");
+const { getWorkerManager } = require("./workers/worker-manager");
 
 const PORT = process.env.PORT || 3000;
 
@@ -21,8 +22,12 @@ const startServer = async () => {
     // Initialize WebSocket server
     const wsService = new WebSocketService(server);
 
-    // Attach WebSocket service to app for potential use in routes
+    // Attach WebSocket service to app
     app.set("wsService", wsService);
+
+    // Start background workers
+    const workerManager = getWorkerManager();
+    workerManager.start();
 
     // Start server
     server.listen(PORT, () => {
@@ -33,15 +38,25 @@ const startServer = async () => {
         `📡 API Base: http://localhost:${PORT}/api/${process.env.API_VERSION}`
       );
       console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
+      console.log(`⚙️  Background workers: Active`);
     });
 
     // Graceful shutdown
-    process.on("SIGTERM", () => {
+    const shutdown = async () => {
       console.log("SIGTERM received, shutting down gracefully");
+
+      // Stop workers first
+      await workerManager.stop();
+
+      // Close server
       server.close(() => {
         console.log("Process terminated");
+        process.exit(0);
       });
-    });
+    };
+
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
