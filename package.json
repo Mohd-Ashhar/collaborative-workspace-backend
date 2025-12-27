@@ -6,11 +6,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage --detectOpenHandles --forceExit",
+    "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
-    "lint": "echo 'Linting not configured yet' && exit 0"
+    "lint": "echo 'Linting not configured' && exit 0"
   },
   "keywords": [],
   "author": "",
@@ -41,7 +42,10 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
     "@types/jest": "^30.0.0",
+    "babel-jest": "^30.2.0",
     "eslint": "^9.39.2",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
