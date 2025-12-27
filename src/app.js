@@ -32,9 +32,24 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("combined"));
 }
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger.config');
+
 // Health check
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Workspace API Docs',
+}));
+
+// Swagger JSON
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 // API Routes
@@ -43,6 +58,7 @@ const projectRoutes = require("./routes/project.routes");
 const workspaceRoutes = require("./routes/workspace.routes");
 const jobRoutes = require('./routes/job.routes');
 const AuthMiddleware = require("./middleware/auth.middleware");
+
 
 app.use(`/api/${process.env.API_VERSION}/auth`, authRoutes);
 app.use(`/api/${process.env.API_VERSION}/projects`, projectRoutes);
