@@ -8,17 +8,17 @@ const {
 
 class QueueService {
   constructor() {
-    // Initialize Bull queues
     this.queues = {};
 
-    // Create queue for each job type
+    // Redis configuration for Render
+    const redisConfig = process.env.REDIS_URL || {
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT,
+      password: process.env.REDIS_PASSWORD,
+    };
+
     Object.values(JOB_TYPES).forEach((jobType) => {
-      this.queues[jobType] = new Bull(jobType, {
-        redis: {
-          host: process.env.REDIS_HOST,
-          port: process.env.REDIS_PORT,
-          password: process.env.REDIS_PASSWORD,
-        },
+      this.queues[jobType] = new Bull(jobType, redisConfig, {
         defaultJobOptions: {
           attempts: JOB_CONFIG.MAX_RETRIES,
           backoff: JOB_CONFIG.BACKOFF,
