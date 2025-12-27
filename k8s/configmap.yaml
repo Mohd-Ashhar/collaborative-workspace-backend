@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workspace-config
+  namespace: workspace
+data:
+  NODE_ENV: "production"
+  API_VERSION: "v1"
+  PORT: "3000"
+  JWT_EXPIRE: "15m"
+  JWT_REFRESH_EXPIRE: "7d"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "workspace_db"
+  MONGODB_URI: "mongodb://mongodb-service:27017/workspace_db"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
