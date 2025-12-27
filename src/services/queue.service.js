@@ -10,12 +10,14 @@ class QueueService {
   constructor() {
     this.queues = {};
 
-    // Redis configuration for Render
-    const redisConfig = process.env.REDIS_URL || {
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      password: process.env.REDIS_PASSWORD,
-    };
+    // Redis configuration - handle both URL and individual params
+    const redisConfig = process.env.REDIS_URL
+      ? process.env.REDIS_URL
+      : {
+          host: process.env.REDIS_HOST || "localhost",
+          port: process.env.REDIS_PORT || 6379,
+          password: process.env.REDIS_PASSWORD || undefined,
+        };
 
     Object.values(JOB_TYPES).forEach((jobType) => {
       this.queues[jobType] = new Bull(jobType, redisConfig, {

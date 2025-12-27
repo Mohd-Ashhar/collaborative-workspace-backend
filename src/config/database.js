@@ -3,7 +3,7 @@ const { Pool } = require("pg");
 const mongoose = require("mongoose");
 const redis = require("redis");
 
-// PostgreSQL Configuration - Support both individual vars and DATABASE_URL
+// PostgreSQL Configuration
 const pgConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
@@ -25,7 +25,6 @@ const pgConfig = process.env.DATABASE_URL
 
 const pgPool = new Pool(pgConfig);
 
-// Test PostgreSQL connection
 async function testPgConnection() {
   try {
     const client = await pgPool.connect();
@@ -52,27 +51,34 @@ async function connectMongoDB() {
   }
 }
 
-// Redis Configuration - Support both individual vars and REDIS_URL
-const redisConfig = process.env.REDIS_URL
-  ? process.env.REDIS_URL
-  : {
-      host: process.env.REDIS_HOST || "localhost",
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD || undefined,
-    };
+// Redis Configuration - FIX FOR RENDER
+const getRedisConfig = () => {
+  if (process.env.REDIS_URL) {
+    // Render provides redis:// URL
+    return { url: process.env.REDIS_URL };
+  }
+  // Local development
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASSWORD || undefined,
+  };
+};
 
-const redisClient = redis.createClient(
-  typeof redisConfig === "string" ? { url: redisConfig } : redisConfig
-);
+const redisConfig = getRedisConfig();
 
-const redisPublisher = redisClient.duplicate();
-const redisSubscriber = redisClient.duplicate();
+// Create three separate clients with same config
+const redisClient = redis.createClient(redisConfig);
+const redisPublisher = redis.createClient(redisConfig);
+const redisSubscriber = redis.createClient(redisConfig);
 
 async function connectRedis() {
   try {
-    await redisClient.connect();
-    await redisPublisher.connect();
-    await redisSubscriber.connect();
+    await Promise.all([
+      redisClient.connect(),
+      redisPublisher.connect(),
+      redisSubscriber.connect(),
+    ]);
     console.log("✅ Redis connected");
   } catch (error) {
     console.error("❌ Redis connection error:", error.message);
@@ -80,7 +86,16 @@ async function connectRedis() {
   }
 }
 
-redisClient.on("error", (err) => console.error("Redis Client Error:", err));
+// Error handlers
+redisClient.on("error", (err) =>
+  console.error("Redis Client Error:", err.message)
+);
+redisPublisher.on("error", (err) =>
+  console.error("Redis Publisher Error:", err.message)
+);
+redisSubscriber.on("error", (err) =>
+  console.error("Redis Subscriber Error:", err.message)
+);
 
 module.exports = {
   pgPool,
