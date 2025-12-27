@@ -6,8 +6,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage --detectOpenHandles",
-    "test:watch": "jest --watch"
+    "test": "jest --coverage --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "lint": "echo 'Linting not configured yet' && exit 0"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +35,8 @@
     "redis": "^5.10.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0",
     "ws": "^8.18.3"
   },
