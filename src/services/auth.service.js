@@ -22,7 +22,7 @@ class AuthService {
 
       // Insert user
       const result = await client.query(
-        `INSERT INTO users (email, password_hash, name) 
+        `INSERT INTO users (email, password, name) 
          VALUES ($1, $2, $3) 
          RETURNING id, email, name, created_at`,
         [email, passwordHash, name]
@@ -66,7 +66,7 @@ class AuthService {
     try {
       // Find user
       const result = await client.query(
-        "SELECT id, email, name, password_hash, created_at FROM users WHERE email = $1",
+        "SELECT id, email, name, password, created_at FROM users WHERE email = $1",
         [email]
       );
 
@@ -79,7 +79,7 @@ class AuthService {
       // Verify password
       const isPasswordValid = await PasswordUtil.compare(
         password,
-        user.password_hash
+        user.password
       );
       if (!isPasswordValid) {
         throw new Error("Invalid email or password");
