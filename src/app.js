@@ -32,8 +32,8 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("combined"));
 }
 
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger.config');
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger.config");
 
 // Health check
 app.get("/health", (req, res) => {
@@ -41,14 +41,18 @@ app.get("/health", (req, res) => {
 });
 
 // Swagger API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Workspace API Docs',
-}));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "Workspace API Docs",
+  })
+);
 
 // Swagger JSON
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
+app.get("/api-docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);
 });
 
@@ -56,19 +60,27 @@ app.get('/api-docs.json', (req, res) => {
 const authRoutes = require("./routes/auth.routes");
 const projectRoutes = require("./routes/project.routes");
 const workspaceRoutes = require("./routes/workspace.routes");
-const jobRoutes = require('./routes/job.routes');
+const jobRoutes = require("./routes/job.routes");
 const AuthMiddleware = require("./middleware/auth.middleware");
 
-
+// Auth routes (public + protected)
 app.use(`/api/${process.env.API_VERSION}/auth`, authRoutes);
-app.use(`/api/${process.env.API_VERSION}/projects`, projectRoutes);
-app.use(`/api/${process.env.API_VERSION}/jobs`, jobRoutes);
 
-// Nested workspace routes under projects
+// Protected routes with authentication
 app.use(
-  `/api/${process.env.API_VERSION}/projects/:projectId/workspaces`,
+  `/api/${process.env.API_VERSION}/workspaces`,
   AuthMiddleware.authenticate,
   workspaceRoutes
+);
+app.use(
+  `/api/${process.env.API_VERSION}/projects`,
+  AuthMiddleware.authenticate,
+  projectRoutes
+);
+app.use(
+  `/api/${process.env.API_VERSION}/jobs`,
+  AuthMiddleware.authenticate,
+  jobRoutes
 );
 
 // 404 handler - BEFORE error handler
